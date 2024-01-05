@@ -13,7 +13,7 @@ fn main() -> io::Result<()> {
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;
 
-    let mut board: board::ConwayGame = board::build_board(70);
+    let mut board: board::ConwayGame = board::build_board(10, 10);
     board.generate_random();
 
     let mut should_quit = false;
@@ -24,7 +24,7 @@ fn main() -> io::Result<()> {
         }
 
         terminal.draw(|f| {
-            ui(&mut board, f);
+            game_ui(&mut board, f);
         })?;
         should_quit = handle_events(&mut board, &mut auto_step)?;
     }
@@ -34,25 +34,33 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+fn setup_menu<B: Backend>(terminal: &mut Terminal<B>) -> io::Result<()> {
+    let mut should_continue = false;
+
+    while !should_continue {
+        terminal.draw(setup_ui);
+    }
+
+    Ok(())
+}
+
 fn handle_events(game: &mut board::ConwayGame, auto_step: &mut bool) -> io::Result<bool> {
     if event::poll(std::time::Duration::from_millis(50))? {
         if let Event::Key(key) = event::read()? {
-            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('q') {
-                return Ok(true);
-            }
-
-            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('n') {
-                game.step();
-            }
-            if key.kind == event::KeyEventKind::Press && key.code == KeyCode::Char('a') {
-                *auto_step = !*auto_step;
+            if key.kind == event::KeyEventKind::Press {
+                match key.code {
+                    KeyCode::Char('q') => return Ok(true),
+                    KeyCode::Char('a') => *auto_step = !*auto_step,
+                    KeyCode::Char('n') => game.step(),
+                    _ => (),
+                }
             }
         }
     }
     Ok(false)
 }
 
-fn ui(game: &mut board::ConwayGame, frame: &mut Frame) {
+fn game_ui(game: &mut board::ConwayGame, frame: &mut Frame) {
     let main_layout = Layout::new(
         Direction::Horizontal,
         [Constraint::Percentage(50), Constraint::Percentage(50)],
@@ -77,5 +85,19 @@ fn ui(game: &mut board::ConwayGame, frame: &mut Frame) {
             )
             .alignment(Alignment::Center),
         main_layout[1],
+    );
+}
+
+fn setup_ui(frame: &mut Frame) {
+    let setup_layout =
+        Layout::new(Direction::Horizontal, [Constraint::Percentage(90)]).split(frame.size());
+
+    frame.render_widget(
+        Paragraph::new(Text::from(
+            "The arrow keys to shrink or expand the game board",
+        ))
+        .block(Block::default().borders(Borders::ALL).title("Setup"))
+        .alignment(Alignment::Center),
+        setup_layout[0],
     );
 }

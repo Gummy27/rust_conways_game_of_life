@@ -1,26 +1,23 @@
 use rand::Rng;
 
 pub struct ConwayGame {
-    pub size: usize,
+    pub width: usize,
+    pub height: usize,
     pub game: Vec<u8>,
 }
 
-pub struct Index2d {
-    pub line: usize,
-    pub column: usize,
-}
-
-pub fn build_board(size: usize) -> ConwayGame {
+pub fn build_board(width: usize, height: usize) -> ConwayGame {
     ConwayGame {
-        size,
-        game: vec![0; size * size],
+        width,
+        height,
+        game: vec![0; width * height],
     }
 }
 
 impl ConwayGame {
     fn print(&self) {
-        for line in 0..self.size {
-            for column in 0..self.size {
+        for line in 0..self.height {
+            for column in 0..self.width {
                 print!("{}", self.get_tile(line, column).unwrap());
             }
             println!("");
@@ -30,15 +27,15 @@ impl ConwayGame {
     pub fn generate_random(&mut self) {
         let mut rng = rand::thread_rng();
 
-        for line in 0..self.size {
-            for column in 0..self.size {
+        for line in 0..self.height {
+            for column in 0..self.width {
                 self.set_tile(line, column, rng.gen_range(0..2))
             }
         }
     }
 
     fn get_tile(&self, line: usize, column: usize) -> Option<&u8> {
-        let tile = self.game.get(line * self.size + column);
+        let tile = self.game.get(line * self.width + column);
 
         match tile {
             None => {
@@ -50,23 +47,23 @@ impl ConwayGame {
     }
 
     fn set_tile(&mut self, line: usize, column: usize, value: u8) {
-        let tile = self.game.get_mut(line * self.size + column).unwrap();
+        let tile = self.game.get_mut(line * self.width + column).unwrap();
 
         *tile = value;
     }
 
     fn get_neighbour_index(&self, line: usize, column: usize) -> Vec<usize> {
         let mut neighbours: Vec<usize> = Vec::new();
-        let index = line * self.size + column;
+        let index = line * self.width + column;
 
         // Up
         if line > 0 {
-            neighbours.push(index - self.size);
+            neighbours.push(index - self.width);
         }
 
         // Down
-        if line < self.size {
-            neighbours.push(index + self.size);
+        if line < self.width {
+            neighbours.push(index + self.width);
         }
 
         // Left
@@ -75,7 +72,7 @@ impl ConwayGame {
         }
 
         // Right
-        if column < self.size {
+        if column < self.width {
             neighbours.push(index + 1);
         }
 
@@ -91,7 +88,7 @@ impl ConwayGame {
         }
 
         // Down
-        if line < self.size - 1 {
+        if line < self.height - 1 {
             counter += self.get_tile(line + 1, column).unwrap();
         }
 
@@ -101,12 +98,12 @@ impl ConwayGame {
         }
 
         // Right
-        if column < self.size - 1 {
+        if column < self.width - 1 {
             counter += self.get_tile(line, column + 1).unwrap();
         }
 
         // Top Right
-        if line > 0 && column < self.size - 1 {
+        if line > 0 && column < self.width - 1 {
             counter += self.get_tile(line - 1, column + 1).unwrap();
         }
 
@@ -116,11 +113,11 @@ impl ConwayGame {
         }
 
         // Bottom Right
-        if line < self.size - 1 && column < self.size - 1 {
+        if line < self.height - 1 && column < self.width - 1 {
             counter += self.get_tile(line + 1, column + 1).unwrap();
         }
         // Bottom Left
-        if line < self.size - 1 && column > 0 {
+        if line < self.height - 1 && column > 0 {
             counter += self.get_tile(line + 1, column - 1).unwrap();
         }
 
@@ -129,8 +126,8 @@ impl ConwayGame {
 
     fn print_neighbour_board(&mut self) {
         println!("------------------ Neighbour ------------------");
-        for line in 0..self.size {
-            for column in 0..self.size {
+        for line in 0..self.height {
+            for column in 0..self.width {
                 print!("{}", self.neighbour_count(line, column));
             }
             println!("");
@@ -154,8 +151,8 @@ impl ConwayGame {
     }
 
     pub fn step(&mut self) {
-        for line in 0..self.size {
-            for column in 0..self.size {
+        for line in 0..self.height {
+            for column in 0..self.width {
                 self.update_tile(line, column);
             }
         }
@@ -165,8 +162,8 @@ impl ConwayGame {
         let mut game_string = String::new();
         let mut current_tile;
 
-        for line in 0..self.size {
-            for column in 0..self.size {
+        for line in 0..self.height {
+            for column in 0..self.width {
                 current_tile = self.get_tile(line, column).unwrap();
                 match current_tile {
                     0 => game_string.push_str(" "),
@@ -182,27 +179,12 @@ impl ConwayGame {
     pub fn to_string_neighbour(&mut self) -> String {
         let mut neighbour_string = String::new();
 
-        for line in 0..self.size {
-            for column in 0..self.size {
+        for line in 0..self.height {
+            for column in 0..self.width {
                 neighbour_string.push_str(&self.neighbour_count(line, column).to_string());
             }
             neighbour_string.push_str("\n");
         }
         neighbour_string
     }
-}
-
-fn main() {
-    let mut board = build_board(20);
-
-    board.print();
-
-    board.set_tile(0, 0, 1);
-    board.set_tile(0, 1, 1);
-    board.set_tile(1, 1, 1);
-    board.set_tile(1, 0, 1);
-
-    board.print_neighbour_board();
-    board.step();
-    board.print();
 }
